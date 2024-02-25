@@ -18,9 +18,7 @@ func main() {
 	forwardClient := &http.Client{}
 
 	app := NewApp(config, e, forwardClient)
-	app.registerMiddleware()
-	app.registerRoutes()
-	err = app.serve()
+	err = app.run()
 
 	if err != nil {
 		log.Fatal(err)

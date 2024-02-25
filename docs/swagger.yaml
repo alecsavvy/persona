@@ -1,0 +1,27 @@
+info:
+  contact: {}
+paths:
+  /:
+    get:
+      consumes:
+      - application/json
+      description: handles any route and method and forwards it to the identity service
+        as if the caller called identity directly
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: forwards requests to identity service
+    post:
+      consumes:
+      - application/json
+      description: handles any route and method and forwards it to the identity service
+        as if the caller called identity directly
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: forwards requests to identity service
+swagger: "2.0"

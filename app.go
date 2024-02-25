@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"log/slog"
@@ -22,35 +22,6 @@ func NewApp(config *Config, server *echo.Echo, forwardClient *http.Client) *App 
 	return &App{
 		config, server, forwardClient,
 	}
-}
-
-func (app *App) forwardRequest(c echo.Context) error {
-	originalRequest := c.Request()
-	uri := originalRequest.RequestURI
-	forwardedUrl := fmt.Sprintf("%s%s", app.config.IdentityUrl, uri)
-
-	logger.Info("forwarding request", "url", forwardedUrl, "method", originalRequest.Method)
-
-	req, err := http.NewRequest(originalRequest.Method, forwardedUrl, originalRequest.Body)
-	if err != nil {
-		return err
-	}
-
-	for name, values := range originalRequest.Header {
-		for _, value := range values {
-			req.Header.Add(name, value)
-		}
-	}
-
-	// Send the request
-	resp, err := app.forwardClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	c.Response().Header().Set("Content-Type", resp.Header.Get("Content-Type"))
-	return c.Stream(resp.StatusCode, resp.Header.Get("Content-Type"), resp.Body)
 }
 
 func (app *App) registerRoutes() {
@@ -175,6 +146,19 @@ func (app *App) registerMiddleware() {
 	}))
 }
 
-func (app *App) serve() error {
+func (app *App) registerDocs() {
+	app.server.GET("/swagger.json", func(c echo.Context) error {
+		json, err := ioutil.ReadFile("docs/swagger.json")
+		if err != nil {
+			return err // Handle error
+		}
+		return c.JSONBlob(http.StatusOK, json)
+	})
+}
+
+func (app *App) run() error {
+	app.registerMiddleware()
+	app.registerRoutes()
+	app.registerDocs()
 	return app.server.Start(":7000")
 }
