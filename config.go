@@ -34,5 +34,7 @@ func NewConfig() (*Config, error) {
 		return nil, errors.New(fmt.Sprintf("environment %s not valid", environment))
 	}
 
+	logger.Info("configuration", "env", environment, "identity", config.IdentityUrl)
+
 	return config, nil
 }

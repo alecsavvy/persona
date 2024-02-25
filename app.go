@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 
+	"log/slog"
+
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 type App struct {
@@ -13,6 +18,7 @@ type App struct {
 }
 
 func NewApp(config *Config, server *echo.Echo, forwardClient *http.Client) *App {
+	server.HideBanner = true
 	return &App{
 		config, server, forwardClient,
 	}
@@ -20,8 +26,12 @@ func NewApp(config *Config, server *echo.Echo, forwardClient *http.Client) *App 
 
 func (app *App) forwardRequest(c echo.Context) error {
 	originalRequest := c.Request()
+	uri := originalRequest.RequestURI
+	forwardedUrl := fmt.Sprintf("%s%s", app.config.IdentityUrl, uri)
 
-	req, err := http.NewRequest(originalRequest.Method, app.config.IdentityUrl, originalRequest.Body)
+	logger.Info("forwarding request", "url", forwardedUrl, "method", originalRequest.Method)
+
+	req, err := http.NewRequest(originalRequest.Method, forwardedUrl, originalRequest.Body)
 	if err != nil {
 		return err
 	}
@@ -139,6 +149,30 @@ func (app *App) registerRoutes() {
 	app.server.POST("/user_playlist_updates", app.forwardRequest)
 	app.server.POST("/email/welcome", app.forwardRequest)
 	app.server.POST("/wormhole_relay", app.forwardRequest)
+}
+
+func (app *App) registerMiddleware() {
+	app.server.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogStatus:   true,
+		LogURI:      true,
+		LogError:    true,
+		HandleError: true,
+		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+			if v.Error == nil {
+				logger.LogAttrs(context.Background(), slog.LevelInfo, "REQUEST",
+					slog.String("uri", v.URI),
+					slog.Int("status", v.Status),
+				)
+			} else {
+				logger.LogAttrs(context.Background(), slog.LevelError, "REQUEST_ERROR",
+					slog.String("uri", v.URI),
+					slog.Int("status", v.Status),
+					slog.String("err", v.Error.Error()),
+				)
+			}
+			return nil
+		},
+	}))
 }
 
 func (app *App) serve() error {
