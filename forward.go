@@ -19,7 +19,7 @@ func (app *App) forwardRequest(c echo.Context) error {
 	uri := originalRequest.RequestURI
 	forwardedUrl := fmt.Sprintf("%s%s", app.config.IdentityUrl, uri)
 
-	logger.Info("forwarding request", "url", forwardedUrl, "method", originalRequest.Method)
+	app.logger.Info("forwarding request", "url", forwardedUrl, "method", originalRequest.Method)
 
 	req, err := http.NewRequest(originalRequest.Method, forwardedUrl, originalRequest.Body)
 	if err != nil {

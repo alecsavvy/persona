@@ -8,16 +8,20 @@ import (
 )
 
 func main() {
+	logger := InitLogger()
+
 	config, err := NewConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	logger.Info("configuration", "env", config.Environment, "identity", config.IdentityUrl)
+
 	e := echo.New()
 
 	forwardClient := &http.Client{}
 
-	app := NewApp(config, e, forwardClient)
+	app := NewApp(logger, config, e, forwardClient)
 	err = app.run()
 
 	if err != nil {

@@ -15,12 +15,13 @@ type App struct {
 	config        *Config
 	server        *echo.Echo
 	forwardClient *http.Client
+	logger        *slog.Logger
 }
 
-func NewApp(config *Config, server *echo.Echo, forwardClient *http.Client) *App {
+func NewApp(logger *slog.Logger, config *Config, server *echo.Echo, forwardClient *http.Client) *App {
 	server.HideBanner = true
 	return &App{
-		config, server, forwardClient,
+		config, server, forwardClient, logger,
 	}
 }
 
@@ -130,12 +131,12 @@ func (app *App) registerMiddleware() {
 		HandleError: true,
 		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
 			if v.Error == nil {
-				logger.LogAttrs(context.Background(), slog.LevelInfo, "REQUEST",
+				app.logger.LogAttrs(context.Background(), slog.LevelInfo, "REQUEST",
 					slog.String("uri", v.URI),
 					slog.Int("status", v.Status),
 				)
 			} else {
-				logger.LogAttrs(context.Background(), slog.LevelError, "REQUEST_ERROR",
+				app.logger.LogAttrs(context.Background(), slog.LevelError, "REQUEST_ERROR",
 					slog.String("uri", v.URI),
 					slog.Int("status", v.Status),
 					slog.String("err", v.Error.Error()),
