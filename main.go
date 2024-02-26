@@ -1,18 +1,26 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/labstack/echo/v4"
 )
 
 func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "fatal error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
 	logger := InitLogger()
 
 	config, err := NewConfig()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	logger.Info("configuration", "env", config.Environment, "identity", config.IdentityUrl)
@@ -25,6 +33,8 @@ func main() {
 	err = app.run()
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+
+	return nil
 }
